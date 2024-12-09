@@ -133,7 +133,15 @@ function commands()
     sampRegisterChatCommand("fu", function(arg)
         local id = cutParam(arg)
         if not isActiveCommand then
-            local invite_rp = {
+
+        end
+    end)
+
+    sampRegisterChatCommand("fu", function(arg)
+        local id, reason = cutParam(arg)
+        if not isActiveCommand then
+            if id and reason then    
+            local uninvite_rp = {
                 "/do В кармане рубашки лежит записная книга и ручка.",
                 "/me засунул руку в карман, затем достал книгу, потом перо",
                 "/do В записной книге написаны все участники Horny Squad.",
@@ -141,9 +149,25 @@ function commands()
                 "/do На странице зачёркнут участник: " .. getname(id) ..".",
                 "/me закрыл записную книгу и положил в карман рубашки",
                 "/do В кармане рубашки лежит записная книга и ручка.",
-                "/famuninvite " .. id
+                "/famuninvite " .. id .. reason
             }
-                playrp(invite_rp)
+            playrp(unnvite_rp)
+            elseif id and not reason then
+            reason = "Не оправдал надежд"
+            local uninvite_rp = {
+                "/do В кармане рубашки лежит записная книга и ручка.",
+                "/me засунул руку в карман, затем достал книгу, потом перо",
+                "/do В записной книге написаны все участники Horny Squad.",
+                "/me ручкой небрежно вычеркнул " .. getname(id) .. " с участников семьи",
+                "/do На странице зачёркнут участник: " .. getname(id) ..".",
+                "/me закрыл записную книгу и положил в карман рубашки",
+                "/do В кармане рубашки лежит записная книга и ручка.",
+                "/famuninvite " .. id .. " " .. reason
+            }
+                playrp(uninvite_rp)
+            end
+        else
+            sampAddChatMessage('{ff00ff}[Horny Helper 2.0 by {00ff00}Kynu{ff0000}CJIoHa{ff00ff}]{ff0000}: Команда уже активна, подождите завершения текущей!', err_color)
         end
     end)
 
@@ -162,7 +186,6 @@ function commands()
                 "/do В кармане рубашки лежит записная книга и ручка.",
                 "/famwarn " .. id .. " " .. reason
             }
-                sampAddChatMessage(id .. " " .. reason, err_color)
                 playrp(warn_rp)
             elseif id and not reason then
             reason = "Н.П.С"
