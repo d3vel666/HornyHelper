@@ -2,283 +2,281 @@
 
 script_name("Horny Helper")
 script_description('Cross-platform script helper for Families')
-script_author("<D3VEL/>")
-script_version("1.0 Alpha")
+script_author("KynuCJ10HA")
+script_version("2.0 Beta")
 local ffi = require('ffi')
 local sampev = require('samp.events')
 
-local default_settings = {
-    commands = {
-        { cmd = 'finv' , description = 'Пригласить Игорька в семью',  text = '/me передаёт человеку напротив приглашение&/faminvite {id}' , arg = 'id' , enable = true, waiting = '1.200', deleted = false}
-    }
+-- Р¦РІРµС‚Р° СЃРѕРѕР±С‰РµРЅРёР№
+local welcome_color = 0xFFff00ff
+local err_color = 0xFFff0000
+local success_color = 0xFF00ff00
+
+id = nil
+
+-- РЎРїРёСЃРѕРє РІСЃРµС… СЃРѕРѕР±С‰РµРЅРёР№, РєРѕС‚РѕСЂС‹Рµ РЅСѓР¶РЅРѕ РѕС‚РїСЂР°РІРёС‚СЊ
+local marketing_messages = {
+    "/fam РџСЂРёРІРµС‚, РІ РЅР°С€РµР№ СЃРµРјСЊРµ РµСЃС‚СЊ РІРѕР·РјРѕР¶РЅРѕСЃС‚СЊ РїРѕРєСѓРїРєРё СЂР°РЅРіРѕРІ",
+    "/fam [2]РћРіСѓР·РѕРє - 1.OOO.OOO$",
+    "/fam [3]РЎРєСЂРѕРјРЅРёРє - 1.5OO.OOO$",
+    "/fam [4]РџСѓРїСЃРёРє - 2.OOO.OOO$",
+    "/fam [5]Р’РѕРґРёС‚РµР»СЊ РІРµР»РѕСЃРёРїРµРґР° - 3.5OO.OOO$",
+    "/fam [6]РљР°Р№С„СѓС€Р° - 4.OOO.OOO$",
+    "/fam [7]РЎРїРѕСЂС‚РёРє - 5.5OO.OOO$",
+    "/fam [8]РћРїРµСЂР°С‚РѕСЂ РєР°С‡Р°Р»РєРё - 6.0OO.OOO$",
+    "/fam [9]Р‘Р»Р°С‚РЅРѕР№ - РЈСЃС‚Р°РЅРѕРІРєР° Р¤Р°РјРёР»РёРё Horny",
+    "/fam РћРїРїР»Р°С‚РёС‚СЊ СЂР°РЅРі РјРѕР¶РЅРѕ РІ СЂР°Р·РґРµР»Рµ /fammenu -> РЎРµРјРµР№РЅР°СЏ РєРІР°СЂС‚РёСЂР°",
+    "/fam [5] РџРѕР»РѕР¶РёС‚СЊ РґРµРЅСЊРіРё РЅР° СЃРєР»Р°Рґ СЃРµРјСЊРё",
+    "/fam РќРµ Р·Р°Р±СѓРґСЊ СЃРґРµР»Р°С‚СЊ СЃРєСЂРёРЅС€РѕС‚ СЃ time (/time + F8)",
+    "/fam РѕС‚РїСЂР°РІР»СЏС‚СЊ РІ РўР“: @KynuCJ10HA",
+    "/fam Р—Р°РјРєРё РЅРµ РІС‹РґР°С‘Рј!!!",
+    "/fam РќРµР°РєС‚РёРІ - 30 РґРЅРµР№ (Р°РІС‚РѕРєРёРє)",
+    "/fam СЂР°РЅРіРё РїРѕСЃР»Рµ РЅРµР°РєС‚РёРІР°/СѓС…РѕРґР° РёР· СЃРµРјСЊРё РЅРµ РІРѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРј",
+    "/fam РќР°С€ РґРёСЃРєРѕСЂРґ: https://discord.gg/cTRWq99XQ9"
 }
 
+function isNumber(value)
+    return type(value) == "number"
+end
+
+function tonum(str)
+local num = tonumber(str)
+    return num
+end
+
+-- Р¤СѓРЅРєС†РёСЏ РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ РёРјРµРЅРё РёРіСЂРѕРєР° РїРѕ ID
+function getname(id)
+    return sampGetPlayerNickname(id)
+end
+
+-- Р¤СѓРЅРєС†РёСЏ РґР»СЏ СЂР°Р·Р±РёРµРЅРёСЏ СЃС‚СЂРѕРєРё РЅР°РїР°СЂР°РјРµС‚СЂС‹
+function cutParam(input)
+    local parts = {}
+    for word in string.gmatch(input, "%S+") do
+        table.insert(parts, word)
+    end
+    
+    if #parts < 3 then
+        local id = parts[1]
+        local r = table.concat(parts, " ", 2)
+        return id, r
+    elseif #parts < 2 then
+        return input
+    else
+        local id = parts[1]
+        local t = parts[2]
+        local r = table.concat(parts, " ", 3)
+        return id, t, r
+    end
+end
+
+-- Р¤СѓРЅРєС†РёСЏ РґР»СЏ РѕС‚РїСЂР°РІРєРё С‡Р°С‚Р° Рё РІС‹РїРѕР»РЅРµРЅРёСЏ РґРµР№СЃС‚РІРёР№
+function playrp(messages)
+    lua_thread.create(function()
+        isActiveCommand = true
+        -- РћС‚РїСЂР°РІР»СЏРµРј РІСЃРµ СЃРѕРѕР±С‰РµРЅРёСЏ СЃ РїР°СѓР·Р°РјРё
+        for _, message in ipairs(messages) do
+            sampSendChat(message)
+            wait(1000)
+        end
+        -- Р—Р°РІРµСЂС€Р°РµРј РєРѕРјР°РЅРґСѓ РїРѕСЃР»Рµ РѕС‚РїСЂР°РІРєРё РІСЃРµС… СЃРѕРѕР±С‰РµРЅРёР№
+        isActiveCommand = false
+    end)
+end
+
+-- РћСЃРЅРѕРІРЅР°СЏ С„СѓРЅРєС†РёСЏ РґР»СЏ РёРЅРёС†РёР°Р»РёР·Р°С†РёРё С…РµР»РїРµСЂР°
 function main()
     if not isSampLoaded() or not isSampfuncsLoaded() then return end
     while not isSampAvailable() do wait(0) end
     welcome_message()
-    finv()
-    fout()
-    fuo()
-    fmut()
-    frek()
-    fumut()
-    fw()
-    fuw()
-    frc()
+    commands()
 end
 
+-- Р¤СѓРЅРєС†РёСЏ РґР»СЏ РїСЂРёРІРµС‚СЃС‚РІРµРЅРЅРѕРіРѕ СЃРѕРѕР±С‰РµРЅРёСЏ
 function welcome_message()
-	if not sampIsLocalPlayerSpawned() then 
-		sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Инициализация хелпера прошла успешно!', 0xFFff00ff)
-		sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Для полной загрузки хелпера сначало заспавнитесь (войдите на сервер)',0xFFff00ff)
-		repeat wait(0) until sampIsLocalPlayerSpawned()
-	end
-	sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Загрузка хелпера прошла успешно!', 0xFFff00ff)
+    if not sampIsLocalPlayerSpawned() then
+        sampAddChatMessage('{ff00ff}[Horny Helper 2.0 by {00ff00}Kynu{ff0000}CJIoHa{ff00ff}]{ffffff}: РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ С…РµР»РїРµСЂР° РїСЂРѕС€Р»Р° СѓСЃРїРµС€РЅРѕ!', welcome_color)
+        sampAddChatMessage('{ff00ff}[Horny Helper 2.0 by {00ff00}Kynu{ff0000}CJIoHa{ff00ff}]{ffffff}: Р”Р»СЏ РїРѕР»РЅРѕР№ Р·Р°РіСЂСѓР·РєРё С…РµР»РїРµСЂР° СЃРЅР°С‡Р°Р»Рѕ Р·Р°СЃРїР°РІРЅРёС‚РµСЃСЊ (РІРѕР№РґРёС‚Рµ РЅР° СЃРµСЂРІРµСЂ)', welcome_color)
+        repeat wait(0) until sampIsLocalPlayerSpawned()
+    end
+    sampAddChatMessage('{ff00ff}[Horny Helper 2.0 by {00ff00}Kynu{ff0000}CJIoHa{ff00ff}]{ffffff}: Р—Р°РіСЂСѓР·РєР° С…РµР»РїРµСЂР° РїСЂРѕС€Р»Р° СѓСЃРїРµС€РЅРѕ!', welcome_color)
 end
 
-function finv()
-    sampRegisterChatCommand("fi", function(arg)
-        nick = sampGetPlayerNickname(arg)
-        if not isActiveCommand then
-            -- Проверяем, если передан аргумент (ID пользователя)
-            if arg and tonumber(arg) then
-                lua_thread.create(function()
-                    isActiveCommand = true
-    
-                    -- Список всех сообщений, которые нужно отправить
-                    local messages = {
-                        "/do В правом кармане лежит стопка с приглашениями.",
-                        "/me неторопливо достал одну из листовок и передал человеку напротив",
-                        "/do На листовке написано \"Приглашаю вступить в семью Horny Squad, ты нужен нам!\".",
-                        '/b {nick}, чтобы принять введите /offer',
-                        "/faminvite " .. arg
-                    }
-    
-                    -- Отправляем все сообщения с паузами
-                    for _, message in ipairs(messages) do
-                        sampSendChat(message)
-                        wait(1000) -- Пауза между сообщениями
-                    end
-    
-                    -- Завершаем команду после отправки всех сообщений
-                    isActiveCommand = false
-                end)
-            end
-            else
-                sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Вы не указали ID пользователя! Пожалуйста, укажите ID.',0xFFff00ff)
-            end
-        else
-            sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Дождитесь завершения отыгровки предыдущей команды!',0xFFff00ff)
-        end
-    end)
-end
-
-function fout()
-    sampRegisterChatCommand("fu", function(arg)
-        nick = sampGetPlayerNickname(arg)
-        if not isActiveCommand then
-            -- Проверяем, если передан аргумент (ID пользователя)
-            if arg and tonumber(arg) then
-                lua_thread.create(function()
-                    isActiveCommand = true
-    
-                    -- Список всех сообщений, которые нужно отправить
-                    local messages = {
-                        "/do В правом кармане лежит планшет с гравировкой Horny Squad.",
-                        "/me достал планшет с кармана, после чего зашел в панель участники семьи",
-                        "/do Открылось меню со списком участников.",
-                        "/me промотал участников семьи до {nick}, после чего выбрал пункт удалить",
-                        "/do На экране появилось окно подтверждения.",
-                        "/me успешно утвердил удаления {nick} из списка участников семьи"
-                        "/famuninvite " .. arg
-                    }
-    
-                    -- Отправляем все сообщения с паузами
-                    for _, message in ipairs(messages) do
-                        sampSendChat(message)
-                        wait(1000) -- Пауза между сообщениями
-                    end
-    
-                    -- Завершаем команду после отправки всех сообщений
-                    isActiveCommand = false
-                end)
-            end
-            else
-                sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Вы не указали ID пользователя! Пожалуйста, укажите ID.',0xFFff00ff)
-            end
-        else
-            sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Дождитесь завершения отыгровки предыдущей команды!',0xFFff00ff)
-        end
-    end)
-end
-
-function fuo()
-    sampRegisterChatCommand("fuo", function(arg)
-        nick = sampGetPlayerNickname(arg)
-        if not isActiveCommand then
-            -- Проверяем, если передан аргумент (ID пользователя)
-            if arg and tonumber(arg) then
-                lua_thread.create(function()
-                    isActiveCommand = true
-    
-                    -- Список всех сообщений, которые нужно отправить
-                    local messages = {
-                        "/do В правом кармане лежит планшет с гравировкой Horny Squad.",
-                        "/me достал планшет с кармана, после чего зашел в панель участники семьи",
-                        "/do Открылось меню со списком участников.",
-                        "/me промотал участников семьи до {nick}, после чего выбрал пункт удалить",
-                        "/do На экране появилось окно подтверждения.",
-                        "/me успешно утвердил удаления {nick} из списка участников семьи"
-                        "/famoffkick " .. arg
-                    }
-    
-                    -- Отправляем все сообщения с паузами
-                    for _, message in ipairs(messages) do
-                        sampSendChat(message)
-                        wait(1000) -- Пауза между сообщениями
-                    end
-    
-                    -- Завершаем команду после отправки всех сообщений
-                    isActiveCommand = false
-                end)
-            else
-                sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Вы не указали ID пользователя! Пожалуйста, укажите ID.',0xFFff00ff)
-            end
-        else
-            sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Дождитесь завершения отыгровки предыдущей команды!',0xFFff00ff)
-        end
-    end)
-end
-
-function fmut()
-    sampRegisterChatCommand("fmt", function(arg)
-        if not isActiveCommand then
-            -- Проверяем, если передан аргумент (ID пользователя)
-            if arg then
-                sampSendChat("/fammute " .. arg)
-            else
-                sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Вы не указали ID пользователя! Пожалуйста, укажите ID.',0xFFff00ff)
-            end
-        else
-            sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Дождитесь завершения отыгровки предыдущей команды!',0xFFff00ff)
-        end
-    end)
-end
-
-function fumut()
-    sampRegisterChatCommand("fumt", function(arg)
-        if not isActiveCommand then
-            -- Проверяем, если передан аргумент (ID пользователя)
-            if arg and tonumber(arg) then
-                sampSendChat("/famunmute " .. arg)
-            else
-                sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Вы не указали ID пользователя! Пожалуйста, укажите ID.',0xFFff00ff)
-            end
-        else
-            sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Дождитесь завершения отыгровки предыдущей команды!',0xFFff00ff)
-        end
-    end)
-end
-
-function fw()
-    sampRegisterChatCommand("fw", function(arg)
-        if not isActiveCommand then
-            -- Проверяем, если передан аргумент (ID пользователя)
-            if arg then
-                sampSendChat("/famwarn " .. arg)
-            else
-                sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Вы не указали ID пользователя! Пожалуйста, укажите ID.',0xFFff00ff)
-            end
-        else
-            sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Дождитесь завершения отыгровки предыдущей команды!',0xFFff00ff)
-        end
-    end)
-end
-
-function fuw()
-    sampRegisterChatCommand("fuw", function(arg)
-        if not isActiveCommand then
-            -- Проверяем, если передан аргумент (ID пользователя)
-            if arg and tonumber(arg) then
-                sampSendChat("/famunwarn " .. arg)
-            else
-                sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Вы не указали ID пользователя! Пожалуйста, укажите ID.',0xFFff00ff)
-            end
-        else
-            sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Дождитесь завершения отыгровки предыдущей команды!',0xFFff00ff)
-        end
-    end)
-end
-
-function frek()
+-- Р¤СѓРЅРєС†РёСЏ РґР»СЏ СЂРµРіРёСЃС‚СЂР°С†РёРё РєРѕРјР°РЅРґ
+function commands()
+    -- Р РµРєР»Р°РјРЅРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ marketing_messages
     sampRegisterChatCommand("frek", function()
         if not isActiveCommand then
-            lua_thread.create(function()
-                isActiveCommand = true
-
-                -- Список всех сообщений, которые нужно отправить
-                local messages = {
-                    "/fam Привет, в нашей семье есть возможность покупки рангов",
-                    "/fam [2]Огузок - 1.OOO.OOO$",
-                    "/fam [3]Скромник - 1.5OO.OOO$",
-                    "/fam [4]Пупсик - 2.OOO.OOO$",
-                    "/fam [5]Водитель велосипеда - 3.5OO.OOO$",
-                    "/fam [6]Кайфуша - 4.OOO.OOO$",
-                    "/fam [7]Спортик - 5.5OO.OOO$",
-                    "/fam [8]Оператор качалки - 6.0OO.OOO$",
-                    "/fam [9]Блатной - Установка Фамилии Horny",
-                    "/fam Опплатить ранг можно в разделе /fammenu -> Семейная квартира",
-                    "/fam [5] Положить деньги на склад семьи",
-                    "/fam Не забудь сделать скриншот с time (/time + F8)",
-                    "/fam отправлять в ТГ: @IamD3VEL",
-                    "/fam Замки не выдаём!!!",
-                    "/fam Неактив - 30 дней (автокик)",
-                    "/fam ранги после неактива/ухода из семьи не восстанавливаем",
-                    "/fam Наш дискорд: https://discord.gg/cTRWq99XQ9"
-                }
-
-                -- Отправляем все сообщения с паузами
-                for _, message in ipairs(messages) do
-                    sampSendChat(message)
-                    wait(1000) -- Пауза между сообщениями
-                end
-
-                -- Завершаем команду после отправки всех сообщений
-                isActiveCommand = false
-            end)
-        end
-    end)
-end
-
-
-function frc()
-    sampRegisterChatCommand("frc", function()
-        if not isActiveCommand then
-            lua_thread.create(function()
-                isActiveCommand = true
-
-                -- Список всех сообщений, которые нужно отправить
-                local messages = {
-                    "/fam ВНИМАНИЕ: Через 15 сек произойдёт спавн всех семейных автомобилей",
-                    "/fam займите транспорт, иначе он будет заспавнен"
-                }
-
-                -- Отправляем все сообщения с паузами
-                for _, message in ipairs(messages) do
-                    sampSendChat(message)
-                    wait(1000) -- Пауза между сообщениями
-                end
-
-                wait(15000)
-                sampSendChat("/famspawn")
-
-                -- Завершаем команду после отправки всех сообщений
-                isActiveCommand = false
-            end)
+            playrp(marketing_messages)
         else
-            sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Дождитесь завершения отыгровки предыдущей команды!', 0xFFff00ff)
+            sampAddChatMessage('{ff00ff}[Horny Helper 2.0 by {00ff00}Kynu{ff0000}CJIoHa{ff00ff}]{ff0000}: РљРѕРјР°РЅРґР° СѓР¶Рµ Р°РєС‚РёРІРЅР°, РїРѕРґРѕР¶РґРёС‚Рµ Р·Р°РІРµСЂС€РµРЅРёСЏ С‚РµРєСѓС‰РµР№!', err_color)
+        end
+    end)
+
+    sampRegisterChatCommand("fi", function(arg)
+        local id = cutParam(arg)
+        if not isActiveCommand then
+            local invite_rp = {
+                "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ Р·Р°РїРёСЃРЅР°СЏ РєРЅРёРіР° Рё СЂСѓС‡РєР°.",
+                "/me Р·Р°СЃСѓРЅСѓР» СЂСѓРєСѓ РІ РєР°СЂРјР°РЅ, Р·Р°С‚РµРј РґРѕСЃС‚Р°Р» РєРЅРёРіСѓ, РїРѕС‚РѕРј РїРµСЂРѕ",
+                "/do Р’ Р·Р°РїРёСЃРЅРѕР№ РєРЅРёРіРµ РЅР°РїРёСЃР°РЅС‹ РІСЃРµ СѓС‡Р°СЃС‚РЅРёРєРё Horny Squad.",
+                "/me СЂСѓС‡РєРѕР№ РЅРµР±СЂРµР¶РЅРѕ С‡РµСЂРєР°РЅСѓР» РЅР° СЃС‚СЂР°РЅРёС†Рµ СЃ СѓС‡Р°СЃС‚РЅРёРєР°РјРё СЃРµРјСЊРё",
+                "/do РќР° СЃС‚СЂР°РЅРёС†Рµ РґРѕР±Р°РІР»РµРЅ РЅРѕРІС‹Р№ СѓС‡Р°СЃС‚РЅРёРє: " .. getname(id) ..".",
+                "/me Р·Р°РєСЂС‹Р» Р·Р°РїРёСЃРЅСѓСЋ РєРЅРёРіСѓ Рё РїРѕР»РѕР¶РёР» РІ РєР°СЂРјР°РЅ СЂСѓР±Р°С€РєРё",
+                "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ Р·Р°РїРёСЃРЅР°СЏ РєРЅРёРіР° Рё СЂСѓС‡РєР°.",
+                "/faminvite " .. id
+            }
+                playrp(invite_rp)
+        end
+    end)
+
+    sampRegisterChatCommand("fu", function(arg)
+        local id = cutParam(arg)
+        if not isActiveCommand then
+            local invite_rp = {
+                "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ Р·Р°РїРёСЃРЅР°СЏ РєРЅРёРіР° Рё СЂСѓС‡РєР°.",
+                "/me Р·Р°СЃСѓРЅСѓР» СЂСѓРєСѓ РІ РєР°СЂРјР°РЅ, Р·Р°С‚РµРј РґРѕСЃС‚Р°Р» РєРЅРёРіСѓ, РїРѕС‚РѕРј РїРµСЂРѕ",
+                "/do Р’ Р·Р°РїРёСЃРЅРѕР№ РєРЅРёРіРµ РЅР°РїРёСЃР°РЅС‹ РІСЃРµ СѓС‡Р°СЃС‚РЅРёРєРё Horny Squad.",
+                "/me СЂСѓС‡РєРѕР№ РЅРµР±СЂРµР¶РЅРѕ РІС‹С‡РµСЂРєРЅСѓР» " .. getname(id) .. " СЃ СѓС‡Р°СЃС‚РЅРёРєРѕРІ СЃРµРјСЊРё",
+                "/do РќР° СЃС‚СЂР°РЅРёС†Рµ Р·Р°С‡С‘СЂРєРЅСѓС‚ СѓС‡Р°СЃС‚РЅРёРє: " .. getname(id) ..".",
+                "/me Р·Р°РєСЂС‹Р» Р·Р°РїРёСЃРЅСѓСЋ РєРЅРёРіСѓ Рё РїРѕР»РѕР¶РёР» РІ РєР°СЂРјР°РЅ СЂСѓР±Р°С€РєРё",
+                "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ Р·Р°РїРёСЃРЅР°СЏ РєРЅРёРіР° Рё СЂСѓС‡РєР°.",
+                "/famuninvite " .. id
+            }
+                playrp(invite_rp)
+        end
+    end)
+
+    sampRegisterChatCommand("fw", function(arg)
+        local id, reason = cutParam(arg)
+        if not isActiveCommand then
+            if id and reason then
+                
+            local warn_rp = {
+                "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ Р·Р°РїРёСЃРЅР°СЏ РєРЅРёРіР° Рё СЂСѓС‡РєР°.",
+                "/me Р·Р°СЃСѓРЅСѓР» СЂСѓРєСѓ РІ РєР°СЂРјР°РЅ, Р·Р°С‚РµРј РґРѕСЃС‚Р°Р» РєРЅРёРіСѓ, РїРѕС‚РѕРј РїРµСЂРѕ",
+                "/do Р’ Р·Р°РїРёСЃРЅРѕР№ РєРЅРёРіРµ РЅР°РїРёСЃР°РЅС‹ РІСЃРµ СѓС‡Р°СЃС‚РЅРёРєРё Horny Squad.",
+                "/me СЂСѓС‡РєРѕР№ РЅРµР±СЂРµР¶РЅРѕ С‡РµСЂРєР°РЅСѓР» РЅР° СЃС‚СЂР°РЅРёС†Рµ СЃ СѓС‡Р°СЃС‚РЅРёРєР°РјРё СЃРµРјСЊРё",
+                "/do РќР° СЃС‚СЂР°РЅРёС†Рµ РѕС‚РјРµС‡РµРЅРЅРѕ: " .. getname(id) .. " РїСЂРµРґСѓРїСЂРµР¶РґС‘РЅ Р·Р°: " .. reason ..".",
+                "/me Р·Р°РєСЂС‹Р» Р·Р°РїРёСЃРЅСѓСЋ РєРЅРёРіСѓ Рё РїРѕР»РѕР¶РёР» РІ РєР°СЂРјР°РЅ СЂСѓР±Р°С€РєРё",
+                "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ Р·Р°РїРёСЃРЅР°СЏ РєРЅРёРіР° Рё СЂСѓС‡РєР°.",
+                "/famwarn " .. id .. " " .. reason
+            }
+                sampAddChatMessage(id .. " " .. reason, err_color)
+                playrp(warn_rp)
+            elseif id and not reason then
+            reason = "Рќ.Рџ.РЎ"
+            local warn_rp = {
+                "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ Р·Р°РїРёСЃРЅР°СЏ РєРЅРёРіР° Рё СЂСѓС‡РєР°.",
+                "/me Р·Р°СЃСѓРЅСѓР» СЂСѓРєСѓ РІ РєР°СЂРјР°РЅ, Р·Р°С‚РµРј РґРѕСЃС‚Р°Р» РєРЅРёРіСѓ, РїРѕС‚РѕРј РїРµСЂРѕ",
+                "/do Р’ Р·Р°РїРёСЃРЅРѕР№ РєРЅРёРіРµ РЅР°РїРёСЃР°РЅС‹ РІСЃРµ СѓС‡Р°СЃС‚РЅРёРєРё Horny Squad.",
+                "/me СЂСѓС‡РєРѕР№ РЅРµР±СЂРµР¶РЅРѕ С‡РµСЂРєР°РЅСѓР» РЅР° СЃС‚СЂР°РЅРёС†Рµ СЃ СѓС‡Р°СЃС‚РЅРёРєР°РјРё СЃРµРјСЊРё",
+                "/do РќР° СЃС‚СЂР°РЅРёС†Рµ РѕС‚РјРµС‡РµРЅРЅРѕ: " .. getname(id) .. " РїСЂРµРґСѓРїСЂРµР¶РґС‘РЅ Р·Р°: " .. reason ..".",
+                "/me Р·Р°РєСЂС‹Р» Р·Р°РїРёСЃРЅСѓСЋ РєРЅРёРіСѓ Рё РїРѕР»РѕР¶РёР» РІ РєР°СЂРјР°РЅ СЂСѓР±Р°С€РєРё",
+                "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ Р·Р°РїРёСЃРЅР°СЏ РєРЅРёРіР° Рё СЂСѓС‡РєР°.",
+                "/famwarn " .. id .. " " .. reason
+            }
+                playrp(warn_rp)
+            end
+        else
+            sampAddChatMessage('{ff00ff}[Horny Helper 2.0 by {00ff00}Kynu{ff0000}CJIoHa{ff00ff}]{ff0000}: РљРѕРјР°РЅРґР° СѓР¶Рµ Р°РєС‚РёРІРЅР°, РїРѕРґРѕР¶РґРёС‚Рµ Р·Р°РІРµСЂС€РµРЅРёСЏ С‚РµРєСѓС‰РµР№!', err_color)
+        end
+    end)
+
+    sampRegisterChatCommand("fuw", function(arg)
+        local id, reason = cutParam(arg)
+        if not isActiveCommand then
+            if id and reason then
+                
+            local unwarn_rp = {
+                "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ Р·Р°РїРёСЃРЅР°СЏ РєРЅРёРіР° Рё СЂСѓС‡РєР°.",
+                "/me Р·Р°СЃСѓРЅСѓР» СЂСѓРєСѓ РІ РєР°СЂРјР°РЅ, Р·Р°С‚РµРј РґРѕСЃС‚Р°Р» РєРЅРёРіСѓ, РїРѕС‚РѕРј РїРµСЂРѕ",
+                "/do Р’ Р·Р°РїРёСЃРЅРѕР№ РєРЅРёРіРµ РЅР°РїРёСЃР°РЅС‹ РІСЃРµ СѓС‡Р°СЃС‚РЅРёРєРё Horny Squad.",
+                "/me СЂСѓС‡РєРѕР№ РЅРµР±СЂРµР¶РЅРѕ РІС‹С‡РµСЂРєРЅСѓР» РЅР° СЃС‚СЂР°РЅРёС†Рµ СЃ СѓС‡Р°СЃС‚РЅРёРєР°РјРё СЃРµРјСЊРё СЃС‚СЂРѕРєСѓ",
+                "/do РќР° СЃС‚СЂР°РЅРёС†Рµ РІС‹С‡РµСЂРєРЅСѓС‚Рѕ: " .. getname(id) .. " РїСЂРµРґСѓРїСЂРµР¶РґС‘РЅ...",
+                "/me Р·Р°РєСЂС‹Р» Р·Р°РїРёСЃРЅСѓСЋ РєРЅРёРіСѓ Рё РїРѕР»РѕР¶РёР» РІ РєР°СЂРјР°РЅ СЂСѓР±Р°С€РєРё",
+                "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ Р·Р°РїРёСЃРЅР°СЏ РєРЅРёРіР° Рё СЂСѓС‡РєР°.",
+                "/unfamwarn " .. id .. " " .. reason
+            }
+            playrp(unwarn_rp)
+            elseif id and not reason then
+            reason = "Р±РµР· РїСЂРёС‡РёРЅС‹"
+            local unwarn_rp = {
+                "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ Р·Р°РїРёСЃРЅР°СЏ РєРЅРёРіР° Рё СЂСѓС‡РєР°.",
+                "/me Р·Р°СЃСѓРЅСѓР» СЂСѓРєСѓ РІ РєР°СЂРјР°РЅ, Р·Р°С‚РµРј РґРѕСЃС‚Р°Р» РєРЅРёРіСѓ, РїРѕС‚РѕРј РїРµСЂРѕ",
+                "/do Р’ Р·Р°РїРёСЃРЅРѕР№ РєРЅРёРіРµ РЅР°РїРёСЃР°РЅС‹ РІСЃРµ СѓС‡Р°СЃС‚РЅРёРєРё Horny Squad.",
+                "/me СЂСѓС‡РєРѕР№ РЅРµР±СЂРµР¶РЅРѕ РІС‹С‡РµСЂРєРЅСѓР» РЅР° СЃС‚СЂР°РЅРёС†Рµ СЃ СѓС‡Р°СЃС‚РЅРёРєР°РјРё СЃРµРјСЊРё СЃС‚СЂРѕРєСѓ",
+                "/do РќР° СЃС‚СЂР°РЅРёС†Рµ РІС‹С‡РµСЂРєРЅСѓС‚Рѕ: " .. getname(id) .. " РїСЂРµРґСѓРїСЂРµР¶РґС‘РЅ...",
+                "/me Р·Р°РєСЂС‹Р» Р·Р°РїРёСЃРЅСѓСЋ РєРЅРёРіСѓ Рё РїРѕР»РѕР¶РёР» РІ РєР°СЂРјР°РЅ СЂСѓР±Р°С€РєРё",
+                "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ Р·Р°РїРёСЃРЅР°СЏ РєРЅРёРіР° Рё СЂСѓС‡РєР°.",
+                "/unfamwarn " .. id .. " " .. reason
+            }
+            playrp(unwarn_rp)
+            end
+        else
+            sampAddChatMessage('{ff00ff}[Horny Helper 2.0 by {00ff00}Kynu{ff0000}CJIoHa{ff00ff}]{ff0000}: РљРѕРјР°РЅРґР° СѓР¶Рµ Р°РєС‚РёРІРЅР°, РїРѕРґРѕР¶РґРёС‚Рµ Р·Р°РІРµСЂС€РµРЅРёСЏ С‚РµРєСѓС‰РµР№!', err_color)
+        end
+    end)
+
+    sampRegisterChatCommand("fmt", function(arg)
+        local id, time, reason = cutParam(arg)
+        if not isActiveCommand then
+            if id and time and reason then
+                
+            local mute_rp = {
+                "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ РїСЂРёРјРёС‚РёРІРЅР°СЏ СЂР°С†РёСЏ.",
+                "/me Р·Р°СЃСѓРЅСѓР» СЂСѓРєСѓ РІ РєР°СЂРјР°РЅ, Р·Р°С‚РµРј РґРѕСЃС‚Р°Р» СѓСЃС‚СЂРѕР№СЃС‚РІРѕ",
+                "/do Р’ СЂР°С†РёРё Р·Р°РїРёСЃР°РЅС‹ РІСЃРµ СѓС‡Р°СЃС‚РЅРёРєРё Horny Squad FM.",
+                "/me РґРІСѓРјСЏ СЂСѓРєР°РјРё РїРѕРєСЂСѓС‚РёР» РєСЂСѓС‚РёР»РєРё, РїРѕРґС‘СЂРіР°Р» СЂС‹С‡Р°Р¶РєРё",
+                "/do Р Р°Р·РґР°Р»СЃСЏ Р·РІСѓРє \"Р’С‹ РѕС‚РєР»СЋС‡РёР»Рё РѕС‚ РІРѕР»РЅС‹ " .. getname(id) .. " Р·Р°: " .. reason .."\".",
+                "/me РІС‹РєР»СЋС‡РёР» Рё РїРѕР»РѕР¶РёР» СЂР°С†РёСЋ РѕР±СЂР°С‚РЅРѕ РІ РєР°СЂРјР°РЅ",
+                "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ РІС‹РєР»СЋС‡РµРЅРЅР°СЏ СЂР°С†РёСЏ.",
+                "/fammute " .. id .. " " .. time .. " " .. reason
+            }
+                playrp(mute_rp)
+            elseif id and not time and not reason then
+            time = 10
+            reason = "Рќ.Рџ.Р§"
+            local mute_rp = {
+                "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ РїСЂРёРјРёС‚РёРІРЅР°СЏ СЂР°С†РёСЏ.",
+                "/me Р·Р°СЃСѓРЅСѓР» СЂСѓРєСѓ РІ РєР°СЂРјР°РЅ, Р·Р°С‚РµРј РґРѕСЃС‚Р°Р» СѓСЃС‚СЂРѕР№СЃС‚РІРѕ",
+                "/do Р’ СЂР°С†РёРё Р·Р°РїРёСЃР°РЅС‹ РІСЃРµ СѓС‡Р°СЃС‚РЅРёРєРё Horny Squad FM.",
+                "/me РґРІСѓРјСЏ СЂСѓРєР°РјРё РїРѕРєСЂСѓС‚РёР» РєСЂСѓС‚РёР»РєРё, РїРѕРґС‘СЂРіР°Р» СЂС‹С‡Р°Р¶РєРё",
+                "/do Р Р°Р·РґР°Р»СЃСЏ Р·РІСѓРє \"Р’С‹ РѕС‚РєР»СЋС‡РёР»Рё РѕС‚ РІРѕР»РЅС‹ " .. getname(id) .. " Р·Р°: " .. reason .."\".",
+                "/me РІС‹РєР»СЋС‡РёР» Рё РїРѕР»РѕР¶РёР» СЂР°С†РёСЋ РѕР±СЂР°С‚РЅРѕ РІ РєР°СЂРјР°РЅ",
+                "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ РІС‹РєР»СЋС‡РµРЅРЅР°СЏ СЂР°С†РёСЏ.",
+                "/fammute " .. id .. " " .. time .. " " .. reason
+            }
+                playrp(warn_rp)
+            elseif id and time and not reason then
+                reason = "Рќ.Рџ.Р§"
+                local mute_rp = {
+                    "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ РїСЂРёРјРёС‚РёРІРЅР°СЏ СЂР°С†РёСЏ.",
+                    "/me Р·Р°СЃСѓРЅСѓР» СЂСѓРєСѓ РІ РєР°СЂРјР°РЅ, Р·Р°С‚РµРј РґРѕСЃС‚Р°Р» СѓСЃС‚СЂРѕР№СЃС‚РІРѕ",
+                    "/do Р’ СЂР°С†РёРё Р·Р°РїРёСЃР°РЅС‹ РІСЃРµ СѓС‡Р°СЃС‚РЅРёРєРё Horny Squad FM.",
+                    "/me РґРІСѓРјСЏ СЂСѓРєР°РјРё РїРѕРєСЂСѓС‚РёР» РєСЂСѓС‚РёР»РєРё, РїРѕРґС‘СЂРіР°Р» СЂС‹С‡Р°Р¶РєРё",
+                    "/do Р Р°Р·РґР°Р»СЃСЏ Р·РІСѓРє \"Р’С‹ РѕС‚РєР»СЋС‡РёР»Рё РѕС‚ РІРѕР»РЅС‹ " .. getname(id) .. " Р·Р°: " .. reason .."\".",
+                    "/me РІС‹РєР»СЋС‡РёР» Рё РїРѕР»РѕР¶РёР» СЂР°С†РёСЋ РѕР±СЂР°С‚РЅРѕ РІ РєР°СЂРјР°РЅ",
+                    "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ РІС‹РєР»СЋС‡РµРЅРЅР°СЏ СЂР°С†РёСЏ.",
+                    "/fammute " .. id .. " " .. time .. " " .. reason
+                }
+                    playrp(warn_rp)
+            elseif id and reason and not time then
+                time = 10
+                local mute_rp = {
+                    "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ РїСЂРёРјРёС‚РёРІРЅР°СЏ СЂР°С†РёСЏ.",
+                    "/me Р·Р°СЃСѓРЅСѓР» СЂСѓРєСѓ РІ РєР°СЂРјР°РЅ, Р·Р°С‚РµРј РґРѕСЃС‚Р°Р» СѓСЃС‚СЂРѕР№СЃС‚РІРѕ",
+                    "/do Р’ СЂР°С†РёРё Р·Р°РїРёСЃР°РЅС‹ РІСЃРµ СѓС‡Р°СЃС‚РЅРёРєРё Horny Squad FM.",
+                    "/me РґРІСѓРјСЏ СЂСѓРєР°РјРё РїРѕРєСЂСѓС‚РёР» РєСЂСѓС‚РёР»РєРё, РїРѕРґС‘СЂРіР°Р» СЂС‹С‡Р°Р¶РєРё",
+                    "/do Р Р°Р·РґР°Р»СЃСЏ Р·РІСѓРє \"Р’С‹ РѕС‚РєР»СЋС‡РёР»Рё РѕС‚ РІРѕР»РЅС‹ " .. getname(id) .. " Р·Р°: " .. reason .."\".",
+                    "/me РІС‹РєР»СЋС‡РёР» Рё РїРѕР»РѕР¶РёР» СЂР°С†РёСЋ РѕР±СЂР°С‚РЅРѕ РІ РєР°СЂРјР°РЅ",
+                    "/do Р’ РєР°СЂРјР°РЅРµ СЂСѓР±Р°С€РєРё Р»РµР¶РёС‚ РІС‹РєР»СЋС‡РµРЅРЅР°СЏ СЂР°С†РёСЏ.",
+                    "/fammute " .. id .. " " .. time .. " " .. reason
+                }
+                    playrp(warn_rp)
+            end
+        else
+            sampAddChatMessage('{ff00ff}[Horny Helper 2.0 by {00ff00}Kynu{ff0000}CJIoHa{ff00ff}]{ff0000}: РљРѕРјР°РЅРґР° СѓР¶Рµ Р°РєС‚РёРІРЅР°, РїРѕРґРѕР¶РґРёС‚Рµ Р·Р°РІРµСЂС€РµРЅРёСЏ С‚РµРєСѓС‰РµР№!', err_color)
         end
     end)
 end
-
