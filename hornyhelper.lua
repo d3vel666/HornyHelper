@@ -39,6 +39,7 @@ end
 
 function finv()
     sampRegisterChatCommand("fi", function(arg)
+        nick = sampGetPlayerNickname(arg)
         if not isActiveCommand then
             -- Проверяем, если передан аргумент (ID пользователя)
             if arg and tonumber(arg) then
@@ -50,7 +51,7 @@ function finv()
                         "/do В правом кармане лежит стопка с приглашениями.",
                         "/me неторопливо достал одну из листовок и передал человеку напротив",
                         "/do На листовке написано \"Приглашаю вступить в семью Horny Squad, ты нужен нам!\".",
-                        "/b Чтобы принять введите /offer",
+                        '/b {nick}, чтобы принять введите /offer',
                         "/faminvite " .. arg
                     }
     
@@ -75,10 +76,34 @@ end
 
 function fout()
     sampRegisterChatCommand("fu", function(arg)
+        nick = sampGetPlayerNickname(arg)
         if not isActiveCommand then
             -- Проверяем, если передан аргумент (ID пользователя)
             if arg and tonumber(arg) then
-                sampSendChat("/famuninvite " .. arg)
+                lua_thread.create(function()
+                    isActiveCommand = true
+    
+                    -- Список всех сообщений, которые нужно отправить
+                    local messages = {
+                        "/do В правом кармане лежит планшет с гравировкой Horny Squad.",
+                        "/me достал планшет с кармана, после чего зашел в панель участники семьи",
+                        "/do Открылось меню со списком участников.",
+                        "/me промотал участников семьи до {nick}, после чего выбрал пункт удалить",
+                        "/do На экране появилось окно подтверждения.",
+                        "/me успешно утвердил удаления {nick} из списка участников семьи"
+                        "/famuninvite " .. arg
+                    }
+    
+                    -- Отправляем все сообщения с паузами
+                    for _, message in ipairs(messages) do
+                        sampSendChat(message)
+                        wait(1000) -- Пауза между сообщениями
+                    end
+    
+                    -- Завершаем команду после отправки всех сообщений
+                    isActiveCommand = false
+                end)
+            end
             else
                 sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Вы не указали ID пользователя! Пожалуйста, укажите ID.',0xFFff00ff)
             end
@@ -90,10 +115,33 @@ end
 
 function fuo()
     sampRegisterChatCommand("fuo", function(arg)
+        nick = sampGetPlayerNickname(arg)
         if not isActiveCommand then
             -- Проверяем, если передан аргумент (ID пользователя)
             if arg and tonumber(arg) then
-                sampSendChat("/famoffkick " .. arg)
+                lua_thread.create(function()
+                    isActiveCommand = true
+    
+                    -- Список всех сообщений, которые нужно отправить
+                    local messages = {
+                        "/do В правом кармане лежит планшет с гравировкой Horny Squad.",
+                        "/me достал планшет с кармана, после чего зашел в панель участники семьи",
+                        "/do Открылось меню со списком участников.",
+                        "/me промотал участников семьи до {nick}, после чего выбрал пункт удалить",
+                        "/do На экране появилось окно подтверждения.",
+                        "/me успешно утвердил удаления {nick} из списка участников семьи"
+                        "/famoffkick " .. arg
+                    }
+    
+                    -- Отправляем все сообщения с паузами
+                    for _, message in ipairs(messages) do
+                        sampSendChat(message)
+                        wait(1000) -- Пауза между сообщениями
+                    end
+    
+                    -- Завершаем команду после отправки всех сообщений
+                    isActiveCommand = false
+                end)
             else
                 sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Вы не указали ID пользователя! Пожалуйста, укажите ID.',0xFFff00ff)
             end
@@ -209,15 +257,24 @@ function frc()
         if not isActiveCommand then
             lua_thread.create(function()
                 isActiveCommand = true
-                sampSendChat("/fam Сейчас произойдёт спавн")
-                wait(1000)
-                sampSendChat("/fam Всех незанятых семейных автомобилей")
-                wait(1000)
-                sampSendChat("/fam У вас 15 секунд чтобы занять транспорт...")
+
+                -- Список всех сообщений, которые нужно отправить
+                local messages = {
+                    "/fam ВНИМАНИЕ: Через 15 сек произойдёт спавн всех семейных автомобилей",
+                    "/fam займите транспорт, иначе он будет заспавнен"
+                }
+
+                -- Отправляем все сообщения с паузами
+                for _, message in ipairs(messages) do
+                    sampSendChat(message)
+                    wait(1000) -- Пауза между сообщениями
+                end
+
                 wait(15000)
                 sampSendChat("/famspawn")
+
+                -- Завершаем команду после отправки всех сообщений
                 isActiveCommand = false
-                sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Команда завершена!', 0xFFff00ff)
             end)
         else
             sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Дождитесь завершения отыгровки предыдущей команды!', 0xFFff00ff)
