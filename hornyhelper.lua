@@ -247,7 +247,7 @@ function commands()
                 "/do В кармане рубашки лежит выключенная рация.",
                 "/fammute " .. id .. " " .. time .. " " .. reason
             }
-                playrp(warn_rp)
+                playrp(mute_rp)
             elseif id and time and not reason then
                 reason = "Н.П.Ч"
                 local mute_rp = {
@@ -260,7 +260,7 @@ function commands()
                     "/do В кармане рубашки лежит выключенная рация.",
                     "/fammute " .. id .. " " .. time .. " " .. reason
                 }
-                    playrp(warn_rp)
+                    playrp(mute_rp)
             elseif id and reason and not time then
                 time = 10
                 local mute_rp = {
@@ -273,7 +273,7 @@ function commands()
                     "/do В кармане рубашки лежит выключенная рация.",
                     "/fammute " .. id .. " " .. time .. " " .. reason
                 }
-                    playrp(warn_rp)
+                    playrp(mute_rp)
             end
         else
             sampAddChatMessage('{ff00ff}[Horny Helper 2.0 by {00ff00}Kynu{ff0000}CJIoHa{ff00ff}]{ff0000}: Команда уже активна, подождите завершения текущей!', err_color)
