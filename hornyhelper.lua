@@ -42,7 +42,28 @@ function finv()
         if not isActiveCommand then
             -- Проверяем, если передан аргумент (ID пользователя)
             if arg and tonumber(arg) then
-                sampSendChat("/faminvite " .. arg)
+                lua_thread.create(function()
+                    isActiveCommand = true
+    
+                    -- Список всех сообщений, которые нужно отправить
+                    local messages = {
+                        "/do В правом кармане лежит стопка с приглашениями.",
+                        "/me неторопливо достал одну из листовок и передал человеку напротив",
+                        "/do На листовке написано \"Приглашаю вступить в семью Horny Squad, ты нужен нам!\".",
+                        "/b Чтобы принять введите /offer",
+                        "/faminvite " .. arg
+                    }
+    
+                    -- Отправляем все сообщения с паузами
+                    for _, message in ipairs(messages) do
+                        sampSendChat(message)
+                        wait(1000) -- Пауза между сообщениями
+                    end
+    
+                    -- Завершаем команду после отправки всех сообщений
+                    isActiveCommand = false
+                end)
+            end
             else
                 sampAddChatMessage('{ff00ff}[Horny Helper {ff0000}by D3VEL{ff00ff}]: {ffffff}Вы не указали ID пользователя! Пожалуйста, укажите ID.',0xFFff00ff)
             end
@@ -164,6 +185,8 @@ function frek()
                     "/fam Не забудь сделать скриншот с time (/time + F8)",
                     "/fam отправлять в ТГ: @IamD3VEL",
                     "/fam Замки не выдаём!!!",
+                    "/fam Неактив - 30 дней (автокик)",
+                    "/fam ранги после неактива/ухода из семьи не восстанавливаем",
                     "/fam Наш дискорд: https://discord.gg/cTRWq99XQ9"
                 }
 
